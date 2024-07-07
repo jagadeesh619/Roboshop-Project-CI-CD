@@ -1,0 +1,95 @@
+pipeline {
+    agent any
+    environment {
+        packageversion=""
+        nexusURL="54.84.159.69:8081"
+    }
+    options{
+        ansiColor('xterm')
+    }
+
+    stages {
+        stage ('gitcheck out') {
+            steps {
+                git url: 'https://github.com/jagadeesh619/docker.git', branch: 'main'
+            }
+        }
+        stage('get version'){
+            steps{
+                script {
+                    dir('roboshop/catalogue'){
+                        def readjson = readJSON file: 'package.json'
+                        packageversion=readjson.version
+                        echo "The version of package is : ${packageversion}"
+                    }                
+                }
+            } 
+        }
+        stage ('install dependencies') {
+            steps {
+                sh """
+
+                 cd roboshop/catalogue
+                 npm install
+
+                 """
+            }
+        }
+        stage ('unit test cases')
+        {
+            steps {
+                   sh """
+                        echo " unit test cases run here "
+                   """
+            }
+        }
+        stage ('scan code') {
+            steps {
+                sh """
+                
+                 sonar-scanner
+
+                 """
+            }
+        }
+        stage('Build') {
+            steps {
+                sh """
+                    cd roboshop/catalogue
+                    ls -la
+                    zip -q -r catalogue.zip ./* -x ".git" -x "*.zip"
+                    ls -ltr
+                """
+            }
+        }
+        stage('Publish Artifact') {
+            steps {
+                script {
+
+                    dir('roboshop/catalogue') {nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: "${nexusURL}",
+                    groupId: 'com.roboshop',
+                    version: "${packageversion}",
+                    repository: 'catalogue',
+                    credentialsId: 'nexus-auth',
+                    artifacts: [
+                        [artifactId: 'catalogue',
+                        classifier: '',
+                        file: 'catalogue.zip',
+                        type: 'zip']
+                        ]
+                      )
+                    }
+                }
+            }
+        }
+
+
+
+
+
+
+    }
+}
