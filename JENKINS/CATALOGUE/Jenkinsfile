@@ -46,7 +46,7 @@ pipeline {
         stage ('scan code') {
             steps {
                 sh """
-                
+                 cd roboshop/catalogue
                  sonar-scanner
 
                  """
