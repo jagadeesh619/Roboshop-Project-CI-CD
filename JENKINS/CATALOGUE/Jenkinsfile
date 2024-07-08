@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         packageversion=""
-        nexusURL="54.84.159.69:8081"
+        nexusURL="54.242.40.248:8081"
     }
     options{
         ansiColor('xterm')
