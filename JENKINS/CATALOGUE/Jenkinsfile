@@ -133,11 +133,12 @@ pipeline {
         }
        stage ('PROCEED TO DEPLOY APPLICATION') {
         steps {
-            script {
+            
                 input {
                     message 'Should we continue to deploy APPLICATION?'
                     ok 'Yes, continue'
                 }
+            script {
                 build job: 'ROBOSHOP-CD', wait: true, parameters: []
             }
         }
