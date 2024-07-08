@@ -96,7 +96,6 @@ pipeline {
         }
         stage ('build and tag docker images') {
             steps {
-                # create using docker pipeline syntax 
                sh """
                 cd roboshop/catalogue
                 docker build -t jagadevops321/catalogue:1.0.0 .
