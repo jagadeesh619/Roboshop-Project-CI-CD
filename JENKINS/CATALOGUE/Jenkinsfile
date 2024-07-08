@@ -131,18 +131,15 @@ pipeline {
                 """
             }
         }
-       stage ('PROCEED TO DEPLOY APPLICATION') {
-        steps {
-            
-                input {
-                    message 'Should we continue to deploy APPLICATION?'
-                    ok 'Yes, continue'
+        stage ('PROCEED TO DEPLOY APPLICATION') {
+            steps {
+                input message: 'Should we continue to deploy APPLICATION?', ok: 'Yes, continue'
+                script {
+                    build job: 'ROBOSHOP-CD', wait: true, parameters: []
                 }
-            script {
-                build job: 'ROBOSHOP-CD', wait: true, parameters: []
             }
         }
-    }
+
 
 
 
