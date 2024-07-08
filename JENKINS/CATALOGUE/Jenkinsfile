@@ -2,7 +2,8 @@ pipeline {
     agent any
     environment {
         packageversion=""
-        nexusURL="54.242.40.248:8081"
+        nexusURL="54.197.34.115:8081"
+        DOCKER_CREDENTIALS_ID=credentials('DOCKER_CREDENTIALS_ID')
     }
     // options{
     //     ansiColor('xterm')
@@ -43,7 +44,15 @@ pipeline {
                    """
             }
         }
-        stage ('scan code') {
+        stage (' file system scan ') {
+            steps {
+                    sh """
+                         cd roboshop/catalogue
+                         trivy fs --format table -o trivy-fs-report.html .
+                    """
+            }
+        }
+        stage (' static  code analysis ') {
             steps {
                 sh """
                  cd roboshop/catalogue
@@ -85,9 +94,54 @@ pipeline {
                 }
             }
         }
+        stage ('build and tag docker images') {
+            steps {
+                # create using docker pipeline syntax 
+               sh """
+                cd roboshop/catalogue
+                docker build -t jagadevops321/catalogue:1.0.0 .
+                """
+            }
+        }
+        stage ('Scaning docker images') {
+            steps {
+                sh """ 
+                    cd roboshop/catalogue
+                    trivy image --format table -o trivy-fs-report.html jagadevops321/catalogue:1.0.0
 
+                """
+            }
+        }
+        stage('Docker Login') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                    }
+                }
+            }
+        }
+        stage ('push docker images ') {
+            steps {
+                sh """ 
+                
+                cd roboshop/catalogue
+                docker push jagadevops321/catalogue:1.0.0
 
-
+                """
+            }
+        }
+       stage ('PROCEED TO DEPLOY APPLICATION') {
+        steps {
+            script {
+                input {
+                    message 'Should we continue to deploy APPLICATION?'
+                    ok 'Yes, continue'
+                }
+                build job: 'ROBOSHOP-CD', wait: true, parameters: []
+            }
+        }
+    }
 
 
 
