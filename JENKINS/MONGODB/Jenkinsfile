@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         packageversion=""
-        nexusURL="54.197.34.115:8081"
+        nexusURL="107.23.37.20:8081"
         DOCKER_CREDENTIALS_ID=credentials('DOCKER_CREDENTIALS_ID')
     }
     // options{
@@ -88,8 +88,8 @@ pipeline {
             steps {
                 sh """ 
                 
-                cd roboshop/catalogue
-                docker push jagadevops321/catalogue:1.0.0
+                cd roboshop/mongodb
+                docker push jagadevops321/mongodb:1.0.0
 
                 """
             }

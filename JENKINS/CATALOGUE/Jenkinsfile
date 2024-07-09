@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         packageversion=""
-        nexusURL="54.197.34.115:8081"
+        nexusURL="107.23.37.20:8081"
         DOCKER_CREDENTIALS_ID=credentials('DOCKER_CREDENTIALS_ID')
     }
     // options{
