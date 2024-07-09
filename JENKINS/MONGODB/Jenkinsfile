@@ -18,7 +18,7 @@ pipeline {
         stage (' static  code analysis ') {
             steps {
                 sh """
-                 cd roboshop/mongodb
+                 
                  sonar-scanner
 
                  """
