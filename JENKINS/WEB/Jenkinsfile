@@ -1,0 +1,133 @@
+pipeline {
+    agent any
+    environment {
+        packageversion=""
+        nexusURL="54.197.34.115:8081"
+        DOCKER_CREDENTIALS_ID=credentials('DOCKER_CREDENTIALS_ID')
+    }
+    // options{
+    //     ansiColor('xterm')
+    // }
+
+    stages {
+        stage ('gitcheck out') {
+            steps {
+                git url: 'https://github.com/jagadeesh619/docker.git', branch: 'main'
+            }
+        }
+        stage ('unit test cases')
+        {
+            steps {
+                   sh """
+                        echo " unit test cases run here "
+                   """
+            }
+        }
+        stage (' file system scan ') {
+            steps {
+                    sh """
+                         cd roboshop/web
+                         trivy fs --format table -o trivy-fs-report.html .
+                    """
+            }
+        }
+        stage (' static  code analysis ') {
+            steps {
+                sh """
+                 cd roboshop/web
+                 sonar-scanner
+
+                 """
+            }
+        }
+        stage('Build') {
+            steps {
+                sh """
+                    cd roboshop/web
+                    ls -la
+                    zip -q -r web.zip ./* -x ".git" -x "*.zip"
+                    ls -ltr
+                """
+            }
+        }
+        stage('Publish Artifact') {
+            steps {
+                script {
+
+                    dir('roboshop/web') {nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: "${nexusURL}",
+                    groupId: 'com.roboshop',
+                    version: "1.0.0",
+                    repository: 'web',
+                    credentialsId: 'nexus-auth',
+                    artifacts: [
+                        [artifactId: 'web',
+                        classifier: '',
+                        file: 'web.zip',
+                        type: 'zip']
+                        ]
+                      )
+                    }
+                }
+            }
+        }
+        stage ('build and tag docker images') {
+            steps {
+               sh """
+                cd roboshop/web
+                docker build -t jagadevops321/web:1.0.0 .
+                """
+            }
+        }
+        stage ('Scaning docker images') {
+            steps {
+                sh """ 
+                    cd roboshop/web
+                    trivy image --format table -o trivy-fs-report.html jagadevops321/web:1.0.0
+
+                """
+            }
+        }
+        stage ('Docker Login') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'DOCKER_CREDENTIALS_ID', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
+                    
+                   }
+               }  
+             }
+        }   
+        stage ('push docker images ') {
+            steps {
+                sh """ 
+                
+                cd roboshop/catalogue
+                docker push jagadevops321/web:1.0.0
+
+                """
+            }
+        }
+        stage ('PROCEED TO DEPLOY APPLICATION') {
+            steps {
+                input message: 'Should we continue to deploy APPLICATION?', ok: 'Yes, continue'
+                script {
+                    build job: 'ROBOSHOP-CD', wait: true, parameters: []
+                }
+            }
+        }
+
+
+
+
+    }
+    post {
+        always {
+
+            echo "deleting the previosly runned pipeline"
+            deleteDir()
+        }
+    }
+}
